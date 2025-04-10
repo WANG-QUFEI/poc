@@ -1,0 +1,44 @@
+services:
+    dms-db-dev:
+        image: postgres:16
+        restart: always
+        container_name: dms-db-dev
+        environment:
+            POSTGRES_PASSWORD: postgres
+            POSTGRES_USER: postgres
+            POSTGRES_DB: dms_db_dev
+        ports:
+            - "6543:5432"
+
+    db-migration:
+        image: amacneil/dbmate
+        entrypoint: ["/bin/sh", "-c", "dbmate --wait up"]
+        volumes:
+            - "./db:/db"
+        depends_on:
+            - dms-db-dev
+        environment:
+            DATABASE_URL: postgres://postgres:postgres@dms-db-dev:5432/dms_db_dev?sslmode=disable
+    poc-web-service:
+        build:
+            context: . # Build from the current directory
+            dockerfile: Dockerfile # Specify Dockerfile name if needed
+        container_name: poc
+        depends_on:
+            - dms-db-dev
+        environment:
+            DATABASE_URL: postgres://postgres:postgres@dms-db-dev:5432/dms_db_dev?sslmode=disable
+        ports:
+            - "8080:8080" # Adjust based on your app
+        command: ["web_service"] # Adjust as needed
+
+    poc-polling-worker:
+        build:
+            context: . # Build from the current directory
+            dockerfile: Dockerfile # Specify Dockerfile name if needed
+        container_name: poc
+        depends_on:
+            - db-migration
+        environment:
+            DATABASE_URL: postgres://postgres:postgres@dms-db-dev:5432/dms_db_dev?sslmode=disable
+        command: ["polling_worker"] # Adjust as needed

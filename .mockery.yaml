@@ -1,0 +1,11 @@
+with-expecter: true
+dry-run: false
+dir: "test/mocks"
+outpkg: "mocks"
+packages:
+  example.poc/device-monitoring-system/internal/api:
+    interfaces:
+      IDeviceMonitor:
+  example.poc/device-monitoring-system/internal/repository:
+    interfaces:
+      IRepository:

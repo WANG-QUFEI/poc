@@ -1,0 +1,19 @@
+edition = "2023";
+
+option go_package = "example.poc/device-monitoring-system/proto";
+
+message DeviceDataRequest {}
+
+message DeviceDataResponse {
+    string device_id = 1;
+    string device_type = 2;
+    string hardware_version = 3;
+    string software_version = 4;
+    string firmware_version = 5;
+    string status = 6;
+    string checksum = 7;
+}
+
+service DeviceMonitor {
+    rpc GetDeviceData (DeviceDataRequest) returns (DeviceDataResponse);
+}
