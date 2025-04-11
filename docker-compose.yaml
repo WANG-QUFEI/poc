@@ -85,3 +85,15 @@ services:
         ports:
             - "9002:9000"
         command: ["start_device_simulator"]
+    device-simulator-4:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        container_name: poc-device-simulator-4
+        environment:
+            GRPC_PORT: 50051
+            REST_PORT: 9000
+            PROTOCOLS: rest
+        ports:
+            - "9003:9000"
+        command: ["start_device_simulator"]

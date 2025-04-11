@@ -159,6 +159,7 @@ func (ds *DeviceSimulator) getRouter() chi.Router {
 				caps = append(caps, api.PollingCapability{
 					Protocol: "rest",
 					Port:     &ds.restPort,
+					Path:     &ds.restPath,
 				})
 			}
 		}
