@@ -51,7 +51,7 @@ services:
             dockerfile: Dockerfile
         container_name: poc-device-simulator-1
         environment:
-            GRPC_PORT: 50151
+            GRPC_PORT: 50051
             REST_PORT: 9000
             REST_DEVICE_DATA_PATH: /api/v1/device
             PROTOCOLS: grpc
@@ -64,12 +64,12 @@ services:
             dockerfile: Dockerfile
         container_name: poc-device-simulator-2
         environment:
-            GRPC_PORT: 50152
-            REST_PORT: 9001
+            GRPC_PORT: 50051
+            REST_PORT: 9000
             REST_DEVICE_DATA_PATH: /api/v2/device
             PROTOCOLS: grpc
         ports:
-            - "9001:9001"
+            - "9001:9000"
         command: ["start_device_simulator"]
 
     device-simulator-3:
@@ -78,10 +78,10 @@ services:
             dockerfile: Dockerfile
         container_name: poc-device-simulator-3
         environment:
-            GRPC_PORT: 50153
-            REST_PORT: 9002
+            GRPC_PORT: 50051
+            REST_PORT: 9000
             REST_DEVICE_DATA_PATH: /api/v3/device
             PROTOCOLS: rest
         ports:
-            - "9002:9002"
+            - "9002:9000"
         command: ["start_device_simulator"]
