@@ -58,7 +58,7 @@ func startPollingWorker() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill)
 	defer cancel()
 
-	pollingWorker, err := worker.NewPollingWorker(nil)
+	pollingWorker, err := worker.NewPollingWorker(nil, 30*time.Second)
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to create polling worker")
 	}

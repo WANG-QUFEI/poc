@@ -424,6 +424,64 @@ func (_c *MockIRepository_GetDevicePollingHistory_Call) RunAndReturn(run func(st
 	return _c
 }
 
+// GetDeviceTypeByName provides a mock function with given fields: name
+func (_m *MockIRepository) GetDeviceTypeByName(name string) (*repository.DeviceType, error) {
+	ret := _m.Called(name)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetDeviceTypeByName")
+	}
+
+	var r0 *repository.DeviceType
+	var r1 error
+	if rf, ok := ret.Get(0).(func(string) (*repository.DeviceType, error)); ok {
+		return rf(name)
+	}
+	if rf, ok := ret.Get(0).(func(string) *repository.DeviceType); ok {
+		r0 = rf(name)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*repository.DeviceType)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(name)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockIRepository_GetDeviceTypeByName_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetDeviceTypeByName'
+type MockIRepository_GetDeviceTypeByName_Call struct {
+	*mock.Call
+}
+
+// GetDeviceTypeByName is a helper method to define mock.On call
+//   - name string
+func (_e *MockIRepository_Expecter) GetDeviceTypeByName(name interface{}) *MockIRepository_GetDeviceTypeByName_Call {
+	return &MockIRepository_GetDeviceTypeByName_Call{Call: _e.mock.On("GetDeviceTypeByName", name)}
+}
+
+func (_c *MockIRepository_GetDeviceTypeByName_Call) Run(run func(name string)) *MockIRepository_GetDeviceTypeByName_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(string))
+	})
+	return _c
+}
+
+func (_c *MockIRepository_GetDeviceTypeByName_Call) Return(_a0 *repository.DeviceType, _a1 error) *MockIRepository_GetDeviceTypeByName_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockIRepository_GetDeviceTypeByName_Call) RunAndReturn(run func(string) (*repository.DeviceType, error)) *MockIRepository_GetDeviceTypeByName_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetDevicesByPage provides a mock function with given fields: page, size, condition
 func (_m *MockIRepository) GetDevicesByPage(page int, size int, condition string) ([]repository.Device, int, error) {
 	ret := _m.Called(page, size, condition)
@@ -545,6 +603,98 @@ func (_c *MockIRepository_GetDevicesByPollingParameter_Call) Return(_a0 []reposi
 }
 
 func (_c *MockIRepository_GetDevicesByPollingParameter_Call) RunAndReturn(run func(repository.DevicePollingParameter) ([]repository.Device, error)) *MockIRepository_GetDevicesByPollingParameter_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// RestoreDevice provides a mock function with given fields: _a0
+func (_m *MockIRepository) RestoreDevice(_a0 uint) error {
+	ret := _m.Called(_a0)
+
+	if len(ret) == 0 {
+		panic("no return value specified for RestoreDevice")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(uint) error); ok {
+		r0 = rf(_a0)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// MockIRepository_RestoreDevice_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'RestoreDevice'
+type MockIRepository_RestoreDevice_Call struct {
+	*mock.Call
+}
+
+// RestoreDevice is a helper method to define mock.On call
+//   - _a0 uint
+func (_e *MockIRepository_Expecter) RestoreDevice(_a0 interface{}) *MockIRepository_RestoreDevice_Call {
+	return &MockIRepository_RestoreDevice_Call{Call: _e.mock.On("RestoreDevice", _a0)}
+}
+
+func (_c *MockIRepository_RestoreDevice_Call) Run(run func(_a0 uint)) *MockIRepository_RestoreDevice_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(uint))
+	})
+	return _c
+}
+
+func (_c *MockIRepository_RestoreDevice_Call) Return(_a0 error) *MockIRepository_RestoreDevice_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockIRepository_RestoreDevice_Call) RunAndReturn(run func(uint) error) *MockIRepository_RestoreDevice_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// RestoreDeviceType provides a mock function with given fields: _a0
+func (_m *MockIRepository) RestoreDeviceType(_a0 uint) error {
+	ret := _m.Called(_a0)
+
+	if len(ret) == 0 {
+		panic("no return value specified for RestoreDeviceType")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(uint) error); ok {
+		r0 = rf(_a0)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// MockIRepository_RestoreDeviceType_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'RestoreDeviceType'
+type MockIRepository_RestoreDeviceType_Call struct {
+	*mock.Call
+}
+
+// RestoreDeviceType is a helper method to define mock.On call
+//   - _a0 uint
+func (_e *MockIRepository_Expecter) RestoreDeviceType(_a0 interface{}) *MockIRepository_RestoreDeviceType_Call {
+	return &MockIRepository_RestoreDeviceType_Call{Call: _e.mock.On("RestoreDeviceType", _a0)}
+}
+
+func (_c *MockIRepository_RestoreDeviceType_Call) Run(run func(_a0 uint)) *MockIRepository_RestoreDeviceType_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(uint))
+	})
+	return _c
+}
+
+func (_c *MockIRepository_RestoreDeviceType_Call) Return(_a0 error) *MockIRepository_RestoreDeviceType_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockIRepository_RestoreDeviceType_Call) RunAndReturn(run func(uint) error) *MockIRepository_RestoreDeviceType_Call {
 	_c.Call.Return(run)
 	return _c
 }

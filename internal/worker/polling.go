@@ -3,23 +3,29 @@ package worker
 import (
 	"context"
 	"fmt"
-	"sync"
 	"time"
 
 	"example.poc/device-monitoring-system/internal/api"
 	"example.poc/device-monitoring-system/internal/config"
 	"example.poc/device-monitoring-system/internal/repository"
 	"github.com/rs/zerolog"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 type PollingWorker struct {
-	repo repository.IRepository
-	rest api.IDeviceMonitor
-	grpc api.IDeviceMonitor
-	psy  api.IPollingStrategy
+	repo     repository.IRepository
+	rest     api.IDeviceMonitor
+	grpc     api.IDeviceMonitor
+	psy      api.IPollingStrategy
+	interval time.Duration
 }
 
-func NewPollingWorker(pollingStrategy api.IPollingStrategy) (*PollingWorker, error) {
+func NewPollingWorker(pollingStrategy api.IPollingStrategy, interval time.Duration) (*PollingWorker, error) {
+	if interval <= 0 {
+		return nil, fmt.Errorf("invalid interval: %v", interval)
+	}
+
 	repo, err := repository.NewRepository(config.DatabaseURL())
 	if err != nil {
 		return nil, fmt.Errorf("failed to get database connection: %w", err)
@@ -29,56 +35,65 @@ func NewPollingWorker(pollingStrategy api.IPollingStrategy) (*PollingWorker, err
 		pollingStrategy = &api.DefaultPollingStrategy{}
 	}
 
+	opts := make([]grpc.DialOption, 0)
+	switch config.Environment() {
+	case "", "development", "dev", "test":
+		opt := grpc.WithTransportCredentials(insecure.NewCredentials())
+		opts = append(opts, opt)
+	}
+
 	return &PollingWorker{
-		repo: repo,
-		rest: api.NewRESTDeviceMonitor(),
-		grpc: api.NewGrpcDeviceMonitor(),
-		psy:  pollingStrategy,
+		repo:     repo,
+		rest:     api.NewRESTDeviceMonitor(),
+		grpc:     api.NewGrpcDeviceMonitor(opts...),
+		psy:      pollingStrategy,
+		interval: interval,
 	}, nil
 }
 
 func (w *PollingWorker) Start(ctx context.Context) error {
-	dts, err := w.repo.GetAllDeviceTypes()
-	if err != nil {
-		return fmt.Errorf("failed to get all device types: %w", err)
-	}
-	if len(dts) == 0 {
-		return fmt.Errorf("no device types configured in the database")
-	}
+	ticker := time.NewTicker(w.interval)
+	defer ticker.Stop()
 
-	m := make(map[string]api.PollingConfig)
-	for _, dt := range dts {
-		cfg, err := w.psy.GetPollingConfigByDeviceType(dt.Name)
+	deviceTypeMap := make(map[string]bool)
+	for {
+		dts, err := w.repo.GetAllDeviceTypes()
 		if err != nil {
-			return fmt.Errorf("failed to get polling config for device type %s: %v", dt.Name, err)
+			return fmt.Errorf("failed to get all device types: %w", err)
 		}
-		if err = cfg.Validate(); err != nil {
-			return fmt.Errorf("invalid polling config for device type %s: %v", dt.Name, err)
+		if len(dts) > 0 {
+			for _, dt := range dts {
+				if _, ok := deviceTypeMap[dt.Name]; !ok {
+					deviceTypeMap[dt.Name] = true
+					cfg, err := w.psy.GetPollingConfigByDeviceType(dt.Name)
+					if err != nil {
+						return fmt.Errorf("failed to get polling config for device type %s: %v", dt.Name, err)
+					}
+					if err = cfg.Validate(); err != nil {
+						return fmt.Errorf("invalid polling config for device type %s: %v", dt.Name, err)
+					}
+					subCtx := zerolog.Ctx(ctx).With().
+						Str("component", "device_polling_worker").
+						Str("device_type", dt.Name).
+						Str("polling_interval", cfg.Interval.String()).
+						Str("polling_timeout", cfg.Timeout.String()).
+						Str("backoff_base_delay", cfg.Backoff.BaseDelay.String()).
+						Str("backoff_max_delay", cfg.Backoff.MaxDelay.String()).
+						Float64("backoff_factor", cfg.Backoff.Factor).
+						Int("polling_batch_size", cfg.BatchSize).Logger().WithContext(ctx)
+					go w.startPollingDevicesByType(subCtx, dt.Name, cfg)
+				}
+			}
 		}
 
-		m[dt.Name] = cfg
+		select {
+		case <-ticker.C:
+			// do nothing, just wait for the next tick
+		case <-ctx.Done():
+			zerolog.Ctx(ctx).Info().Msg("stopping polling worker, context cancelled")
+			return nil
+		}
 	}
-
-	var wg sync.WaitGroup
-	for dt, cfg := range m {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			subCtx := zerolog.Ctx(ctx).With().
-				Str("component", "device_polling_worker").
-				Str("device_type", dt).
-				Str("polling_interval", cfg.Interval.String()).
-				Str("polling_timeout", cfg.Timeout.String()).
-				Str("backoff_base_delay", cfg.Backoff.BaseDelay.String()).
-				Str("backoff_max_delay", cfg.Backoff.MaxDelay.String()).
-				Float64("backoff_factor", cfg.Backoff.Factor).
-				Int("polling_batch_size", cfg.BatchSize).Logger().WithContext(ctx)
-			w.startPollingDevicesByType(subCtx, dt, cfg)
-		}()
-	}
-	wg.Wait()
-
-	return ctx.Err()
 }
 
 func (w *PollingWorker) startPollingDevicesByType(ctx context.Context, deviceType string, cfg api.PollingConfig) {

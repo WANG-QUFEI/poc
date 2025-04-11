@@ -55,7 +55,10 @@ func (s *pollingWorkerTestSuite) SetupSuite() {
 
 	s.repo = repo
 	s.tp = &testPollingStrategy{configMap: make(map[string]api.PollingConfig)}
-	s.worker = &PollingWorker{repo: repo}
+	s.worker = &PollingWorker{
+		repo:     repo,
+		interval: 3 * time.Second,
+	}
 	s.tl = helper.NewTestLogger()
 	s.ctx = s.tl.ZeroLogger().WithContext(context.Background()) // attach test logger to the context
 }

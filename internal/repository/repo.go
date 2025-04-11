@@ -35,7 +35,10 @@ type IRepository interface {
 	CreateDevices(devices []*Device) error
 	CreatePollingHistory(history *PollingHistory) error
 	CreatePollingHistories(histories []*PollingHistory) error
+	RestoreDeviceType(uint) error
 	UpdateDevice(device *Device) error
+	RestoreDevice(uint) error
+	GetDeviceTypeByName(name string) (*DeviceType, error)
 	GetDeviceByID(deviceID string) (*Device, error)
 	GetDevicesByPage(page, size int, condition string) ([]Device, int, error)
 	GetAllDeviceTypes() ([]DeviceType, error)
@@ -73,7 +76,7 @@ func (repo *Repo) CreateDeviceTypes(deviceTypes []*DeviceType) error {
 	if len(deviceTypes) == 0 {
 		return nil
 	}
-	return repo.db.Create(&deviceTypes).Error
+	return repo.db.Clauses(clause.OnConflict{DoNothing: true}).Create(&deviceTypes).Error
 }
 
 func (repo *Repo) CreateDevice(device *Device) error {
@@ -85,6 +88,28 @@ func (repo *Repo) CreateDevice(device *Device) error {
 	}
 	if err := repo.db.Clauses(clause.OnConflict{DoNothing: true}).Create(&device).Error; err != nil {
 		return err
+	}
+	return nil
+}
+
+func (repo *Repo) RestoreDeviceType(deviceTypeID uint) error {
+	if deviceTypeID <= 0 {
+		return fmt.Errorf("illegal argument: device type ID must be greater than 0")
+	}
+	q := `update device_types set deleted_at = null where id = ?`
+	if err := repo.db.Exec(q, deviceTypeID).Error; err != nil {
+		return fmt.Errorf("failed to restore device type with ID %d: %w", deviceTypeID, err)
+	}
+	return nil
+}
+
+func (repo *Repo) RestoreDevice(deviceID uint) error {
+	if deviceID <= 0 {
+		return fmt.Errorf("illegal argument: device ID must be greater than 0")
+	}
+	q := `update devices set deleted_at = null where id = ?`
+	if err := repo.db.Exec(q, deviceID).Error; err != nil {
+		return fmt.Errorf("failed to restore device with ID %d: %w", deviceID, err)
 	}
 	return nil
 }
@@ -187,6 +212,18 @@ func (repo *Repo) GetDevicesByPage(page, size int, condition string) ([]Device, 
 		return nil, 0, err
 	}
 	return devices, count, nil
+}
+
+func (repo *Repo) GetDeviceTypeByName(name string) (*DeviceType, error) {
+	var deviceType DeviceType
+	if err := repo.db.Where("name = ?", name).Find(&deviceType).Error; err != nil {
+		return nil, err
+	}
+	if deviceType.ID > 0 {
+		return &deviceType, nil
+	}
+
+	return nil, nil
 }
 
 func (repo *Repo) GetAllDeviceTypes() ([]DeviceType, error) {

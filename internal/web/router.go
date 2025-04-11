@@ -210,7 +210,7 @@ func (ro *Router) handleAddDevices(w http.ResponseWriter, r *http.Request) {
 				DeviceType: device.DeviceType,
 				Hostname:   device.Hostname,
 			}
-			if err := business.AddDevice(ctx, ro.repo, ro.httpClint, device.DeviceID, device.DeviceType, device.Hostname); err != nil {
+			if err := business.AddDevice(ctx, ro.repo, ro.httpClint, device.DeviceID, device.DeviceType, device.Hostname, device.HealthCheckPort); err != nil {
 				deviceInfo := util.JSONMarshalIgnoreErr(device)
 				zerolog.Ctx(r.Context()).Err(err).RawJSON("device_info", deviceInfo).Msgf("failed to add device")
 				result.Code = fnErrCode(err)

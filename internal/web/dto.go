@@ -16,9 +16,10 @@ type addDevicesResponse struct {
 }
 
 type deviceInfo struct {
-	DeviceID   string `json:"device_id"`
-	DeviceType string `json:"device_type"`
-	Hostname   string `json:"hostname"`
+	DeviceID        string `json:"device_id"`
+	DeviceType      string `json:"device_type"`
+	Hostname        string `json:"hostname"`
+	HealthCheckPort int    `json:"health_check_port"`
 }
 
 type deviceAddingResult struct {
@@ -41,6 +42,9 @@ func (info *deviceInfo) normalize() error {
 	}
 	if info.Hostname == "" {
 		return fmt.Errorf("hostname cannot be empty")
+	}
+	if info.HealthCheckPort < 0 || info.HealthCheckPort > 65535 {
+		return fmt.Errorf("health_check_port must be between 0 and 65535")
 	}
 
 	return nil

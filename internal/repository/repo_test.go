@@ -19,11 +19,10 @@ import (
 
 type dbTestSuite struct {
 	suite.Suite
-	repo repository.IRepository
+	repo *repository.Repo
 }
 
 func (s *dbTestSuite) SetupSuite() {
-	// s.T().Setenv("ENABLE_GORM_LOGGING", "true")
 	repo, err := repository.NewRepository(config.DatabaseURL())
 	if err != nil {
 		s.T().Fatalf("failed to get db connection: %v", err)
@@ -51,7 +50,7 @@ func (s *dbTestSuite) SetupSuite() {
 }
 
 func (s *dbTestSuite) SetupTest() {
-	db := s.repo.(*repository.Repo).Conn()
+	db := s.repo.Conn()
 	if err := clearDB(db); err != nil {
 		s.T().Fatalf("failed to clear database tables: %v", err)
 	}
@@ -172,6 +171,25 @@ func (s *dbTestSuite) TestGetDevicesByPollingParameter() {
 	devices, err = s.repo.GetDevicesByPollingParameter(param)
 	s.NoError(err)
 	s.Len(devices, param.Limit)
+}
+
+func (s *dbTestSuite) TestFindAndRestoreDevice() {
+	typeName := repository.Router
+	dt, err := s.repo.GetDeviceTypeByName(typeName)
+	s.NoError(err)
+	s.NotNil(dt)
+
+	dt.DeletedAt = lo.ToPtr(time.Now())
+	err = s.repo.Conn().Save(dt).Error
+	s.NoError(err)
+
+	err = s.repo.RestoreDeviceType(dt.ID)
+	s.NoError(err)
+
+	dt, err = s.repo.GetDeviceTypeByName(typeName)
+	s.NoError(err)
+	s.NotNil(dt)
+	s.Nil(dt.DeletedAt)
 }
 
 func (s *dbTestSuite) TestGetDevicesByPage() {

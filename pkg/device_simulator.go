@@ -6,6 +6,8 @@ import (
 	"math/rand"
 	"net"
 	"net/http"
+	"os"
+	"strings"
 	"time"
 
 	"example.poc/device-monitoring-system/internal/api"
@@ -138,22 +140,34 @@ func (ds *DeviceSimulator) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 func (ds *DeviceSimulator) getRouter() chi.Router {
 	r := chi.NewRouter()
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
-		resp := api.DeviceHealthCheckResponse{
-			DeviceID:   ds.deviceID,
-			DeviceType: ds.deviceType,
-			Capabilities: []api.PollingCapability{
-				{
-					Protocol: repository.GRPC,
-					Port:     &ds.gRpcPort,
-				},
-				{
-					Protocol: repository.REST,
-					Port:     &ds.restPort,
-					Path:     &ds.restPath,
-				},
-			},
+		protos := os.Getenv("PROTOCOLS")
+		if protos == "" {
+			http.Error(w, "no protocol capabilities configured", http.StatusInternalServerError)
+			return
 		}
 
+		caps := make([]api.PollingCapability, 0)
+		parts := strings.SplitSeq(protos, ",")
+		for pro := range parts {
+			if strings.EqualFold(pro, "grpc") {
+				caps = append(caps, api.PollingCapability{
+					Protocol: "grpc",
+					Port:     &ds.gRpcPort,
+				})
+			}
+			if strings.EqualFold(pro, "rest") {
+				caps = append(caps, api.PollingCapability{
+					Protocol: "rest",
+					Port:     &ds.restPort,
+				})
+			}
+		}
+
+		resp := api.DeviceHealthCheckResponse{
+			DeviceID:     ds.deviceID,
+			DeviceType:   ds.deviceType,
+			Capabilities: caps,
+		}
 		util.ResponseAsJSON(w, http.StatusOK, resp)
 	})
 

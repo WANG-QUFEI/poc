@@ -172,23 +172,23 @@ func IsDeviceDisconnected(_ repository.Device, histories []repository.PollingHis
 	return true
 }
 
-func AddDevice(ctx context.Context, repo repository.IRepository, client *http.Client, deviceId, deviceType, hostname string) error {
-	if deviceId == "" || deviceType == "" || hostname == "" {
-		return fmt.Errorf("illegal argument: device_id, device_type and hostname cannot be empty")
-	}
-
+func AddDevice(ctx context.Context, repo repository.IRepository, client *http.Client, deviceId, deviceType, hostname string, healthCheckPort int) error {
 	device, err := repo.GetDeviceByID(deviceId)
 	if err != nil && !errors.Is(err, repository.ErrRecordNotFound) {
 		return fmt.Errorf("failed to check device db record by deviceId: %w", err)
 	}
 	if device != nil {
-		// device already exists
+		if device.DeletedAt != nil {
+			if err = repo.RestoreDevice(device.ID); err != nil {
+				return fmt.Errorf("failed to restore device: %w", err)
+			}
+		}
 		return nil
 	}
 
 	path := config.HealthCheckPath()
 	path = strings.TrimPrefix(path, "/")
-	reqURL := fmt.Sprintf("http://%s/%s", hostname, path)
+	reqURL := fmt.Sprintf("%s://%s:%d/%s", config.RESTSchema(), hostname, healthCheckPort, path)
 	_, err = url.Parse(reqURL)
 	if err != nil {
 		return fmt.Errorf("failed to parse url %s: %w", reqURL, err)
@@ -234,6 +234,24 @@ func AddDevice(ctx context.Context, repo repository.IRepository, client *http.Cl
 			grpcPort = cap.Port
 		}
 		protocols = append(protocols, cap.Protocol)
+	}
+
+	dt, err := repo.GetDeviceTypeByName(deviceType)
+	if err != nil {
+		return fmt.Errorf("failed to get device type by name: %w", err)
+	}
+	if dt == nil {
+		if err = repo.CreateDeviceTypes([]*repository.DeviceType{
+			{
+				Name: deviceType,
+			},
+		}); err != nil {
+			return fmt.Errorf("failed to create device type: %w", err)
+		}
+	} else if dt.DeletedAt != nil {
+		if err = repo.RestoreDeviceType(dt.ID); err != nil {
+			return fmt.Errorf("failed to restore device type: %w", err)
+		}
 	}
 
 	device = &repository.Device{

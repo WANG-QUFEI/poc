@@ -21,24 +21,67 @@ services:
             DATABASE_URL: postgres://postgres:postgres@dms-db-dev:5432/dms_db_dev?sslmode=disable
     poc-web-service:
         build:
-            context: . # Build from the current directory
-            dockerfile: Dockerfile # Specify Dockerfile name if needed
+            context: .
+            dockerfile: Dockerfile
         container_name: poc
         depends_on:
             - dms-db-dev
-        environment:
-            DATABASE_URL: postgres://postgres:postgres@dms-db-dev:5432/dms_db_dev?sslmode=disable
-        ports:
-            - "8080:8080" # Adjust based on your app
-        command: ["web_service"] # Adjust as needed
-
-    poc-polling-worker:
-        build:
-            context: . # Build from the current directory
-            dockerfile: Dockerfile # Specify Dockerfile name if needed
-        container_name: poc
-        depends_on:
             - db-migration
         environment:
             DATABASE_URL: postgres://postgres:postgres@dms-db-dev:5432/dms_db_dev?sslmode=disable
-        command: ["polling_worker"] # Adjust as needed
+        ports:
+            - "8080:8080"
+        command: ["web_service"]
+
+    poc-polling-worker:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        container_name: poc-worker
+        depends_on:
+            - dms-db-dev
+            - db-migration
+        environment:
+            DATABASE_URL: postgres://postgres:postgres@dms-db-dev:5432/dms_db_dev?sslmode=disable
+        command: ["polling_worker"]
+
+    device-simulator-1:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        container_name: poc-device-simulator-1
+        environment:
+            GRPC_PORT: 50151
+            REST_PORT: 9000
+            REST_DEVICE_DATA_PATH: /api/v1/device
+            PROTOCOLS: grpc
+        ports:
+            - "9000:9000"
+        command: ["start_device_simulator"]
+    device-simulator-2:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        container_name: poc-device-simulator-2
+        environment:
+            GRPC_PORT: 50152
+            REST_PORT: 9001
+            REST_DEVICE_DATA_PATH: /api/v2/device
+            PROTOCOLS: grpc
+        ports:
+            - "9001:9001"
+        command: ["start_device_simulator"]
+
+    device-simulator-3:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        container_name: poc-device-simulator-3
+        environment:
+            GRPC_PORT: 50153
+            REST_PORT: 9002
+            REST_DEVICE_DATA_PATH: /api/v3/device
+            PROTOCOLS: rest
+        ports:
+            - "9002:9002"
+        command: ["start_device_simulator"]

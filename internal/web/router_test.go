@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -318,23 +319,29 @@ func (s *routerTestSuite) add3DevicesWithOneSucceed() {
 	u1, _ := url.Parse(s1.URL)
 	u2, _ := url.Parse(s2.URL)
 	u3, _ := url.Parse(s3.URL)
+	port1, _ := strconv.Atoi(u1.Port())
+	port2, _ := strconv.Atoi(u2.Port())
+	port3, _ := strconv.Atoi(u3.Port())
 
 	reqObj := addDevicesRequest{
 		Devices: []deviceInfo{
 			{
-				DeviceID:   "device1", // intentionally left blank
-				DeviceType: repository.Router,
-				Hostname:   u1.Host,
+				DeviceID:        "device1", // intentionally left blank
+				DeviceType:      repository.Router,
+				Hostname:        u1.Hostname(),
+				HealthCheckPort: port1,
 			},
 			{
-				DeviceID:   "device2",
-				DeviceType: repository.Switch,
-				Hostname:   u2.Host,
+				DeviceID:        "device2",
+				DeviceType:      repository.Switch,
+				Hostname:        u2.Hostname(),
+				HealthCheckPort: port2,
 			},
 			{
-				DeviceID:   "device3",
-				DeviceType: repository.DoorAccessSystem,
-				Hostname:   u3.Host,
+				DeviceID:        "device3",
+				DeviceType:      repository.DoorAccessSystem,
+				Hostname:        u3.Hostname(),
+				HealthCheckPort: port3,
 			},
 		},
 	}
